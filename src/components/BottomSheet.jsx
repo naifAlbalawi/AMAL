@@ -1,42 +1,26 @@
-import { useEffect, useRef } from "react";
+import { useRef, useEffect } from "react";
 
-export function BottomSheet({ open, onClose, title, children }) {
+export function BottomSheet({ open, onClose, title, children, maxHeight = "85vh" }) {
   const sheetRef = useRef(null);
-
   useEffect(() => {
     if (!open) return;
-    const onClick = (e) => {
-      if (sheetRef.current && !sheetRef.current.contains(e.target)) onClose();
-    };
-    document.addEventListener("mousedown", onClick);
-    document.addEventListener("touchstart", onClick);
-    return () => {
-      document.removeEventListener("mousedown", onClick);
-      document.removeEventListener("touchstart", onClick);
-    };
+    const handler = (e) => { if (sheetRef.current && !sheetRef.current.contains(e.target)) onClose(); };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
   }, [open, onClose]);
-
   if (!open) return null;
-
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 200,
-      background: "rgba(0,0,0,0.4)",
-      display: "flex", alignItems: "flex-end", justifyContent: "center"
-    }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center", backdropFilter: "blur(4px)" }}>
       <div ref={sheetRef} style={{
-        background: "#fff", width: "100%", maxWidth: 520,
-        borderRadius: "20px 20px 0 0",
-        padding: "20px 20px calc(20px + env(safe-area-inset-bottom))",
-        maxHeight: "85vh", overflow: "auto",
-        animation: "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
+        background: "#1a1a1a", width: "100%", maxWidth: 520,
+        borderRadius: "24px 24px 0 0", border: "1px solid #2a2a2a",
+        padding: "24px 20px calc(24px + env(safe-area-inset-bottom))",
+        maxHeight, overflow: "auto", animation: "slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: "#1A1D23" }}>{title}</span>
-          <button onClick={onClose} style={{
-            background: "#F0F2F7", border: "none", borderRadius: 99,
-            width: 32, height: 32, cursor: "pointer", fontSize: 16, color: "#4A5160"
-          }}>×</button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>{title}</span>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 99, background: "#2a2a2a", color: "#888", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
         </div>
         {children}
       </div>
