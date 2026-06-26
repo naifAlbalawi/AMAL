@@ -28,51 +28,126 @@ export default function Settings() {
 
   return (
     <div className="animate-fade-in">
-      <h1 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 16px" }}>{t("settings")}</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 20px" }}>{t("settings")}</h1>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
         {stats.map(item => (
-          <div key={item.label} style={{ background: "#1a1a1a", borderRadius: 14, padding: 14, border: "1px solid #222", textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: "#888" }}>{item.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: item.color, marginTop: 4 }}>{item.count}</div>
+          <div key={item.label} style={{ background: "#1a1a1a", borderRadius: 18, padding: 16, border: "1px solid #222", textAlign: "center" }}>
+            <div style={{ fontSize: 12, color: "#888", fontWeight: 500 }}>{item.label}</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: item.color, marginTop: 6 }}>{item.count}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: "#1a1a1a", borderRadius: 16, border: "1px solid #222", overflow: "hidden", marginBottom: 16 }}>
-        <div onClick={() => setShowCurrency(!showCurrency)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottom: "1px solid #222", cursor: "pointer" }}>
-          <span style={{ fontSize: 14 }}>{t("currency")}</span>
-          <span style={{ fontWeight: 700, color: "#3B5BDB" }}>{state.settings.currency}</span>
+      <div style={{ background: "#1a1a1a", borderRadius: 18, border: "1px solid #222", overflow: "hidden", marginBottom: 20 }}>
+        <div 
+          onClick={() => setShowCurrency(!showCurrency)} 
+          style={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center", 
+            padding: 18, 
+            borderBottom: "1px solid #222", 
+            cursor: "pointer" 
+          }}
+        >
+          <span style={{ fontSize: 15 }}>{t("currency")}</span>
+          <span style={{ fontWeight: 700, color: "#3B5BDB", fontSize: 15 }}>{state.settings.currency}</span>
         </div>
         {showCurrency && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: 12 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, padding: 14 }}>
             {CURRENCIES.map(c => (
-              <button key={c} onClick={() => { setSettings({ currency: c }); setShowCurrency(false); }} style={{ padding: "8px 16px", borderRadius: 10, border: state.settings.currency === c ? "1px solid #3B5BDB" : "1px solid #333", background: state.settings.currency === c ? "#3B5BDB" : "#0F0F0F", color: "#fff", fontWeight: 600, cursor: "pointer" }}>{c}</button>
+              <button 
+                key={c} 
+                onClick={() => { setSettings({ currency: c }); setShowCurrency(false); }} 
+                style={{ 
+                  padding: "10px 18px", 
+                  borderRadius: 12, 
+                  border: state.settings.currency === c ? "1px solid #3B5BDB" : "1px solid #333", 
+                  background: state.settings.currency === c ? "#3B5BDB" : "#0F0F0F", 
+                  color: "#fff", 
+                  fontWeight: 600, 
+                  cursor: "pointer",
+                  fontSize: 14
+                }}
+              >{c}</button>
             ))}
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottom: "1px solid #222" }}>
-          <span style={{ fontSize: 14 }}>{t("language")}</span>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => { setLang("en"); setSettings({ language: "en" }); }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: getLang() === "en" ? "#3B5BDB" : "#222", color: "#fff", fontSize: 12, cursor: "pointer" }}>{t("english")}</button>
-            <button onClick={() => { setLang("ar"); setSettings({ language: "ar" }); }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: getLang() === "ar" ? "#3B5BDB" : "#222", color: "#fff", fontSize: 12, cursor: "pointer" }}>{t("arabic")}</button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 18, borderBottom: "1px solid #222" }}>
+          <span style={{ fontSize: 15 }}>{t("language")}</span>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button 
+              onClick={() => { setLang("en"); setSettings({ language: "en" }); }} 
+              style={{ 
+                padding: "8px 14px", 
+                borderRadius: 10, 
+                border: "none", 
+                background: getLang() === "en" ? "#3B5BDB" : "#222", 
+                color: "#fff", 
+                fontSize: 13, 
+                cursor: "pointer",
+                fontWeight: getLang() === "en" ? 700 : 500
+              }}
+            >{t("english")}</button>
+            <button 
+              onClick={() => { setLang("ar"); setSettings({ language: "ar" }); }} 
+              style={{ 
+                padding: "8px 14px", 
+                borderRadius: 10, 
+                border: "none", 
+                background: getLang() === "ar" ? "#3B5BDB" : "#222", 
+                color: "#fff", 
+                fontSize: 13, 
+                cursor: "pointer",
+                fontWeight: getLang() === "ar" ? 700 : 500
+              }}
+            >{t("arabic")}</button>
           </div>
         </div>
 
-        <button onClick={() => exportData(state)} style={{ width: "100%", textAlign: "start", padding: 16, background: "none", border: "none", color: "#fff", fontSize: 14, borderBottom: "1px solid #222", cursor: "pointer" }}>⬆️ {t("export")}</button>
+        <button 
+          onClick={() => exportData(state)} 
+          style={{ 
+            width: "100%", 
+            textAlign: "start", 
+            padding: 18, 
+            background: "none", 
+            border: "none", 
+            color: "#fff", 
+            fontSize: 15, 
+            borderBottom: "1px solid #222", 
+            cursor: "pointer",
+            fontWeight: 500
+          }}
+        >⬆️ {t("export")}</button>
 
-        <label style={{ display: "block", width: "100%", padding: 16, cursor: "pointer", fontSize: 14 }}>
+        <label style={{ display: "block", width: "100%", padding: 18, cursor: "pointer", fontSize: 15, fontWeight: 500 }}>
           ⬇️ {t("import")}
           <input type="file" accept="application/json" style={{ display: "none" }} onChange={e => e.target.files?.[0] && handleImport(e.target.files[0])} />
         </label>
       </div>
 
-      <button onClick={() => { if (confirm("Erase everything?")) { resetData(); showToast("Reset", "warning"); } }} style={{ width: "100%", padding: 16, borderRadius: 16, border: "1px solid #E03131", background: "rgba(224,49,49,0.1)", color: "#E03131", fontWeight: 700, cursor: "pointer", marginBottom: 20 }}>
+      <button 
+        onClick={() => { if (confirm("Erase everything?")) { resetData(); showToast("Reset", "warning"); } }} 
+        style={{ 
+          width: "100%", 
+          padding: 18, 
+          borderRadius: 18, 
+          border: "1px solid #E03131", 
+          background: "rgba(224,49,49,0.08)", 
+          color: "#E03131", 
+          fontWeight: 700, 
+          cursor: "pointer", 
+          marginBottom: 24,
+          fontSize: 15
+        }}
+      >
         {t("reset")}
       </button>
 
-      <div style={{ textAlign: "center", color: "#444", fontSize: 12, paddingBottom: 40 }}>{t("version")}</div>
+      <div style={{ textAlign: "center", color: "#444", fontSize: 13, paddingBottom: 40 }}>{t("version")}</div>
     </div>
   );
 }

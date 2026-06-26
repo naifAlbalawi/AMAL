@@ -63,69 +63,122 @@ export default function Invoices() {
 
   return (
     <div className="animate-fade-in">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>{t("invoices")}</h1>
-        <button onClick={openNew} style={{ background: "#E03131", color: "#fff", border: "none", borderRadius: 10, padding: "8px 14px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ {t("add")}</button>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{t("invoices")}</h1>
+        <button onClick={openNew} style={{ 
+          background: "#E03131", 
+          color: "#fff", 
+          border: "none", 
+          borderRadius: 12, 
+          padding: "10px 16px", 
+          fontWeight: 700, 
+          fontSize: 14, 
+          cursor: "pointer",
+          lineHeight: 1
+        }}>+ {t("add")}</button>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {state.invoices.map(inv => (
-          <div key={inv.id} onClick={() => { setEditing({ ...inv }); setSheetOpen(true); }} style={{ background: "#1a1a1a", border: "1px solid #222", borderRadius: 16, overflow: "hidden", cursor: "pointer" }}>
+          <div 
+            key={inv.id} 
+            onClick={() => { setEditing({ ...inv }); setSheetOpen(true); }} 
+            style={{ 
+              background: "#1a1a1a", 
+              border: "1px solid #222", 
+              borderRadius: 18, 
+              overflow: "hidden", 
+              cursor: "pointer" 
+            }}
+          >
             {inv.image ? (
-              <img src={inv.image} alt="" style={{ width: "100%", height: 140, objectFit: "cover", opacity: 0.8 }} />
+              <img src={inv.image} alt="" style={{ width: "100%", height: 160, objectFit: "cover", opacity: 0.8 }} />
             ) : (
-              <div style={{ height: 100, display: "flex", alignItems: "center", justifyContent: "center", color: "#555", fontSize: 32 }}>🧾</div>
+              <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", color: "#555", fontSize: 40 }}>🧾</div>
             )}
-            <div style={{ padding: 12 }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{inv.name || "Untitled"}</div>
-              <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>{inv.date} · {inv.items?.length || 0} {t("items")}</div>
+            <div style={{ padding: 16 }}>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>{inv.name || "Untitled"}</div>
+              <div style={{ fontSize: 13, color: "#888", marginTop: 6 }}>{inv.date} · {inv.items?.length || 0} {t("items")}</div>
             </div>
           </div>
         ))}
-        {state.invoices.length === 0 && <div style={{ textAlign: "center", color: "#555", padding: 40, fontSize: 13 }}>{t("noInvoices")}</div>}
+        {state.invoices.length === 0 && <div style={{ textAlign: "center", color: "#555", padding: 40, fontSize: 14 }}>{t("noInvoices")}</div>}
       </div>
 
       <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title={editing?.id && state.invoices.find(i => i.id === editing.id) ? t("edit") : t("add")} maxHeight="90vh">
         {editing && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "4px 0" }}>
-            <input value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} placeholder={t("name")} style={{ padding: 12, borderRadius: 12, border: "1px solid #333", background: "#0F0F0F", color: "#fff", fontSize: 14 }} />
-            <input value={editing.date} onChange={e => setEditing({ ...editing, date: e.target.value })} type="date" style={{ padding: 12, borderRadius: 12, border: "1px solid #333", background: "#0F0F0F", color: "#fff", fontSize: 14 }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "4px 0" }}>
+            <input 
+              value={editing.name} 
+              onChange={e => setEditing({ ...editing, name: e.target.value })} 
+              placeholder={t("name")} 
+              style={{ padding: 14, borderRadius: 14, border: "1px solid #333", background: "#0F0F0F", color: "#fff", fontSize: 15 }} 
+            />
+            <input 
+              value={editing.date} 
+              onChange={e => setEditing({ ...editing, date: e.target.value })} 
+              type="date" 
+              style={{ padding: 14, borderRadius: 14, border: "1px solid #333", background: "#0F0F0F", color: "#fff", fontSize: 15 }} 
+            />
 
-            <button onClick={() => fileRef.current?.click()} style={{ padding: 12, borderRadius: 12, border: "1px dashed #555", background: "transparent", color: "#fff", fontWeight: 600, cursor: "pointer" }}>
+            <button 
+              onClick={() => fileRef.current?.click()} 
+              style={{ 
+                padding: 14, 
+                borderRadius: 14, 
+                border: "1px dashed #555", 
+                background: "transparent", 
+                color: "#fff", 
+                fontWeight: 600, 
+                cursor: "pointer",
+                fontSize: 14
+              }}
+            >
               {processing ? "⏳ OCR..." : "📷 " + t("uploadImage")}
             </button>
             <input ref={fileRef} type="file" accept="image/*,application/pdf" style={{ display: "none" }} onChange={e => handleImage(e.target.files[0])} />
 
-            {editing.image && <img src={editing.image} alt="invoice" style={{ width: "100%", borderRadius: 12, border: "1px solid #333" }} />}
+            {editing.image && <img src={editing.image} alt="invoice" style={{ width: "100%", borderRadius: 14, border: "1px solid #333" }} />}
 
             {editing.extractedText && (
-              <textarea value={editing.extractedText} onChange={e => setEditing({ ...editing, extractedText: e.target.value })} rows={4} style={{ padding: 12, borderRadius: 12, border: "1px solid #333", background: "#0F0F0F", color: "#aaa", fontSize: 12, resize: "none" }} />
+              <textarea 
+                value={editing.extractedText} 
+                onChange={e => setEditing({ ...editing, extractedText: e.target.value })} 
+                rows={4} 
+                style={{ padding: 14, borderRadius: 14, border: "1px solid #333", background: "#0F0F0F", color: "#aaa", fontSize: 13, resize: "none" }} 
+              />
             )}
 
             {editing.items && editing.items.length > 0 && (
-              <div style={{ background: "#0F0F0F", borderRadius: 12, border: "1px solid #222", padding: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: "#ccc" }}>{t("parsedItems")}</div>
+              <div style={{ background: "#0F0F0F", borderRadius: 14, border: "1px solid #222", padding: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "#ccc" }}>{t("parsedItems")}</div>
                 {editing.items.map((it, idx) => (
-                  <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #1a1a1a" }}>
-                    <span style={{ fontSize: 13 }}>{it.name}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>${it.price.toFixed(2)}</span>
-                      <button onClick={() => addItemAsExpense(it, editing.id)} style={{ background: "#2F9E44", color: "#fff", border: "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ {t("add")}</button>
+                  <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #1a1a1a" }}>
+                    <span style={{ fontSize: 14 }}>{it.name}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>${it.price.toFixed(2)}</span>
+                      <button 
+                        onClick={() => addItemAsExpense(it, editing.id)} 
+                        style={{ background: "#2F9E44", color: "#fff", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                      >+ {t("add")}</button>
                     </div>
                   </div>
                 ))}
-                <button onClick={() => { editing.items.forEach(it => addItemAsExpense(it, editing.id)); showToast("All items added", "success"); }} style={{ width: "100%", marginTop: 10, padding: 10, borderRadius: 10, border: "none", background: "#3B5BDB", color: "#fff", fontWeight: 700, cursor: "pointer" }}>
+                <button 
+                  onClick={() => { editing.items.forEach(it => addItemAsExpense(it, editing.id)); showToast("All items added", "success"); }} 
+                  style={{ width: "100%", marginTop: 12, padding: 12, borderRadius: 12, border: "none", background: "#3B5BDB", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}
+                >
                   {t("addAllItems")}
                 </button>
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-              <button onClick={saveInvoice} style={{ flex: 1, padding: 14, borderRadius: 12, border: "none", background: "#E03131", color: "#fff", fontWeight: 700, cursor: "pointer" }}>{t("save")}</button>
-              <button onClick={() => setSheetOpen(false)} style={{ flex: 1, padding: 14, borderRadius: 12, border: "1px solid #333", background: "transparent", color: "#888", fontWeight: 700, cursor: "pointer" }}>{t("cancel")}</button>
+            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+              <button onClick={saveInvoice} style={{ flex: 1, padding: 16, borderRadius: 14, border: "none", background: "#E03131", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 15 }}>{t("save")}</button>
+              <button onClick={() => setSheetOpen(false)} style={{ flex: 1, padding: 16, borderRadius: 14, border: "1px solid #333", background: "transparent", color: "#888", fontWeight: 700, cursor: "pointer", fontSize: 15 }}>{t("cancel")}</button>
             </div>
             {editing.id && state.invoices.find(i => i.id === editing.id) && (
-              <button onClick={() => { setConfirmId(editing.id); setSheetOpen(false); }} style={{ padding: 12, borderRadius: 12, border: "1px solid #E03131", background: "transparent", color: "#E03131", fontWeight: 700, cursor: "pointer" }}>{t("delete")}</button>
+              <button onClick={() => { setConfirmId(editing.id); setSheetOpen(false); }} style={{ padding: 14, borderRadius: 14, border: "1px solid #E03131", background: "transparent", color: "#E03131", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>{t("delete")}</button>
             )}
           </div>
         )}
