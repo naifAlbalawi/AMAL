@@ -1,4 +1,4 @@
-/** @type {import('@capacitor/cli').CapacitorConfig} */
+w/** @type {import('@capacitor/cli').CapacitorConfig} */
 const config = {
   appId: 'com.lifeos.app',
   appName: 'LifeOS',
@@ -18,4 +18,5 @@ const config = {
   },
 };
 
-module.exports = config;
+export default config;
+
