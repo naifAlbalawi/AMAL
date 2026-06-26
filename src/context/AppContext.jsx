@@ -1,62 +1,78 @@
-import { createContext, useContext, useReducer, useEffect, useCallback, useState } from "react";
+import { createContext, useContext, useReducer, useCallback, useState, useEffect } from "react";
+import { loadLang } from "../utils/i18n";
 
-const STORAGE_KEY = "lifeos_v2";
+const STORAGE_KEY = "amal_v3";
+const LEGACY_KEY = "lifeos_v2";
 
-const DEFAULT_CATEGORIES = {
-  consumables: ["Low", "OK", "Stocked"],
-  durables: ["Good", "Worn", "Damaged", "Retired"],
-  car: ["Service", "Fuel", "Annual", "Repair", "Cleaning", "Parking", "Toll", "Fine"],
-  finances: ["Fixed", "Variable", "Subscription", "One-time", "Investment", "Savings"],
-};
+const DEFAULT_TAGS = [
+  { id: "consumables", name: "Consumables", nameAr: "مستهلكات", color: "#3B5BDB", statuses: ["Low", "OK", "Stocked"] },
+  { id: "durables", name: "Durables", nameAr: "أصول", color: "#2F9E44", statuses: ["Good", "Worn", "Damaged", "Retired"] },
+  { id: "car", name: "Car", nameAr: "سيارة", color: "#E67700", statuses: ["Service", "Fuel", "Annual", "Repair", "Cleaning", "Parking", "Toll", "Fine"] },
+  { id: "finances", name: "Finances", nameAr: "مالية", color: "#7950F2", statuses: ["Fixed", "Variable", "Subscription", "One-time", "Investment", "Savings"] },
+  { id: "invoices", name: "Invoices", nameAr: "فواتير", color: "#E03131", statuses: ["Paid", "Pending", "Overdue"] },
+];
 
-const DEFAULT_CURRENCY = "$";
+function daysBetween(a, b) {
+  const ms = new Date(b) - new Date(a);
+  return Math.max(0, Math.round(ms / 86400000));
+}
 
-const DEFAULT_DATA = {
-  consumables: [
-    { id:"c1", name:"Deodorant", price:4.50, bought:"2026-05-01", duration:45, ends:"2026-06-15", monthly:3.0, status:"Low" },
-    { id:"c2", name:"Toothpaste", price:3.20, bought:"2026-05-10", duration:60, ends:"2026-07-09", monthly:1.6, status:"OK" },
-    { id:"c3", name:"Shampoo", price:7.00, bought:"2026-04-20", duration:50, ends:"2026-06-09", monthly:4.2, status:"Low" },
-    { id:"c4", name:"Body Wash", price:5.50, bought:"2026-05-15", duration:55, ends:"2026-07-09", monthly:3.0, status:"OK" },
-    { id:"c5", name:"Razor Blades", price:12.0, bought:"2026-05-01", duration:90, ends:"2026-07-30", monthly:4.0, status:"OK" },
-  ],
-  durables: [
-    { id:"d1", name:"Running Shoes", price:120, bought:"2026-01-15", ends:"2027-01-15", monthly:9.9, status:"Good" },
-    { id:"d2", name:"Winter Jacket", price:85, bought:"2025-11-01", ends:"2027-11-01", monthly:3.5, status:"Good" },
-    { id:"d3", name:"Work Trousers", price:45, bought:"2026-03-10", ends:"2027-03-10", monthly:3.75, status:"Good" },
-    { id:"d4", name:"Backpack", price:60, bought:"2025-06-01", ends:"2027-06-01", monthly:2.5, status:"Worn" },
-  ],
-  car: [
-    { id:"v1", name:"Oil Change", date:"2026-03-15", ends:"2026-09-15", cost:55, type:"Service" },
-    { id:"v2", name:"Tyre Rotation", date:"2026-03-15", ends:"2026-09-15", cost:30, type:"Service" },
-    { id:"v3", name:"Fuel — June 1", date:"2026-06-01", ends:"2026-06-15", cost:72, type:"Fuel" },
-    { id:"v4", name:"Fuel — June 10", date:"2026-06-10", ends:"2026-06-24", cost:68, type:"Fuel" },
-    { id:"v5", name:"Insurance", date:"2026-05-01", ends:"2027-05-01", cost:420, type:"Annual" },
-    { id:"v6", name:"Windscreen Fix", date:"2026-04-22", ends:"2026-04-25", cost:180, type:"Repair" },
-  ],
-  finances: [
-    { id:"f1", name:"Rent", amount:850, date:"2026-06-01", ends:"2026-07-01", type:"Fixed" },
-    { id:"f2", name:"Groceries", amount:210, date:"2026-06-07", ends:"2026-06-21", type:"Variable" },
-    { id:"f3", name:"Utilities", amount:95, date:"2026-06-05", ends:"2026-07-05", type:"Fixed" },
-    { id:"f4", name:"Subscriptions", amount:38, date:"2026-06-01", ends:"2026-07-01", type:"Subscription" },
-    { id:"f5", name:"Car Wash", amount:15, date:"2026-06-12", ends:"2026-06-26", type:"Variable" },
-  ],
-  recipes: [],
-  categories: DEFAULT_CATEGORIES,
-  settings: { currency: DEFAULT_CURRENCY, theme: "dark" },
-};
+function migrateV2(v2) {
+  const expenses = [];
+  const tags = [...DEFAULT_TAGS];
+  (v2.consumables || []).forEach(i => expenses.push({
+    id: i.id, name: i.name, tag: "consumables", amount: i.price || 0,
+    startDate: i.bought, days: i.duration, endDate: i.ends, monthly: i.monthly || 0,
+    status: i.status || "OK", parentId: null, invoiceId: null,
+  }));
+  (v2.durables || []).forEach(i => expenses.push({
+    id: i.id, name: i.name, tag: "durables", amount: i.price || 0,
+    startDate: i.bought, days: daysBetween(i.bought, i.ends), endDate: i.ends, monthly: i.monthly || 0,
+    status: i.status || "Good", parentId: null, invoiceId: null,
+  }));
+  (v2.car || []).forEach(i => expenses.push({
+    id: i.id, name: i.name, tag: "car", amount: i.cost || 0,
+    startDate: i.date, days: daysBetween(i.date, i.ends), endDate: i.ends, monthly: 0,
+    status: i.type || "Service", parentId: null, invoiceId: null,
+  }));
+  (v2.finances || []).forEach(i => expenses.push({
+    id: i.id, name: i.name, tag: "finances", amount: i.amount || 0,
+    startDate: i.date, days: daysBetween(i.date, i.ends), endDate: i.ends, monthly: 0,
+    status: i.type || "Fixed", parentId: null, invoiceId: null,
+  }));
+  const invoices = (v2.recipes || []).map(r => ({
+    id: r.id, name: r.name || "Invoice", date: r.date || new Date().toISOString().slice(0,10),
+    image: r.image || null, extractedText: r.extractedText || "", items: [],
+  }));
+  return {
+    expenses, tags, parents: [],
+    invoices,
+    settings: { currency: v2.settings?.currency || "$", language: loadLang(), theme: v2.settings?.theme || "dark" }
+  };
+}
 
 function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw);
-      // Ensure categories exist for migration
-      if (!parsed.categories) parsed.categories = DEFAULT_CATEGORIES;
-      if (!parsed.settings) parsed.settings = { currency: DEFAULT_CURRENCY, theme: "dark" };
-      return parsed;
+      const p = JSON.parse(raw);
+      if (!p.tags) p.tags = DEFAULT_TAGS;
+      if (!p.parents) p.parents = [];
+      if (!p.invoices) p.invoices = [];
+      if (!p.settings) p.settings = { currency: "$", language: loadLang(), theme: "dark" };
+      return p;
+    }
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy) {
+      const m = migrateV2(JSON.parse(legacy));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(m));
+      return m;
     }
   } catch (e) { console.error("Load failed", e); }
-  return DEFAULT_DATA;
+  return {
+    expenses: [], tags: DEFAULT_TAGS, parents: [], invoices: [],
+    settings: { currency: "$", language: loadLang(), theme: "dark" }
+  };
 }
 
 function saveData(data) {
@@ -66,52 +82,62 @@ function saveData(data) {
 function reducer(state, action) {
   let next;
   switch (action.type) {
-    case "ADD_ITEM": {
-      const list = [...(state[action.space] || []), action.item];
-      next = { ...state, [action.space]: list };
+    case "ADD_EXPENSE": {
+      const list = [...state.expenses, action.item];
+      next = { ...state, expenses: list };
       break;
     }
-    case "UPDATE_ITEM": {
-      const list = (state[action.space] || []).map(i => i.id === action.item.id ? action.item : i);
-      next = { ...state, [action.space]: list };
+    case "UPDATE_EXPENSE": {
+      const list = state.expenses.map(i => i.id === action.item.id ? action.item : i);
+      next = { ...state, expenses: list };
       break;
     }
-    case "DELETE_ITEM": {
-      const list = (state[action.space] || []).filter(i => i.id !== action.id);
-      next = { ...state, [action.space]: list };
+    case "DELETE_EXPENSE": {
+      const list = state.expenses.filter(i => i.id !== action.id);
+      next = { ...state, expenses: list };
       break;
     }
-    case "ADD_RECIPE":
-      next = { ...state, recipes: [...state.recipes, action.recipe] };
-      break;
-    case "UPDATE_RECIPE":
-      next = { ...state, recipes: state.recipes.map(r => r.id === action.recipe.id ? action.recipe : r) };
-      break;
-    case "DELETE_RECIPE":
-      next = { ...state, recipes: state.recipes.filter(r => r.id !== action.id) };
-      break;
-    case "ADD_CATEGORY": {
-      const cats = { ...state.categories };
-      if (!cats[action.space].includes(action.category)) {
-        cats[action.space] = [...cats[action.space], action.category];
-      }
-      next = { ...state, categories: cats };
+    case "ADD_TAG": {
+      if (state.tags.find(t => t.id === action.tag.id)) next = state;
+      else next = { ...state, tags: [...state.tags, action.tag] };
       break;
     }
-    case "REMOVE_CATEGORY": {
-      const cats = { ...state.categories };
-      cats[action.space] = cats[action.space].filter(c => c !== action.category);
-      next = { ...state, categories: cats };
+    case "REMOVE_TAG": {
+      next = { ...state, tags: state.tags.filter(t => t.id !== action.id), expenses: state.expenses.map(e => e.tag === action.id ? { ...e, tag: "finances" } : e) };
       break;
     }
-    case "SET_CURRENCY":
-      next = { ...state, settings: { ...state.settings, currency: action.currency } };
+    case "ADD_PARENT": {
+      next = { ...state, parents: [...state.parents, action.item] };
+      break;
+    }
+    case "UPDATE_PARENT": {
+      next = { ...state, parents: state.parents.map(p => p.id === action.item.id ? action.item : p) };
+      break;
+    }
+    case "DELETE_PARENT": {
+      next = { ...state, parents: state.parents.filter(p => p.id !== action.id), expenses: state.expenses.map(e => e.parentId === action.id ? { ...e, parentId: null } : e) };
+      break;
+    }
+    case "ADD_INVOICE": {
+      next = { ...state, invoices: [...state.invoices, action.item] };
+      break;
+    }
+    case "UPDATE_INVOICE": {
+      next = { ...state, invoices: state.invoices.map(i => i.id === action.item.id ? action.item : i) };
+      break;
+    }
+    case "DELETE_INVOICE": {
+      next = { ...state, invoices: state.invoices.filter(i => i.id !== action.id) };
+      break;
+    }
+    case "SET_SETTINGS":
+      next = { ...state, settings: { ...state.settings, ...action.settings } };
       break;
     case "REPLACE_ALL":
-      next = { ...DEFAULT_DATA, ...action.data, categories: action.data.categories || DEFAULT_CATEGORIES, settings: action.data.settings || { currency: DEFAULT_CURRENCY, theme: "dark" } };
+      next = { ...loadData(), ...action.data, tags: action.data.tags || DEFAULT_TAGS, parents: action.data.parents || [], invoices: action.data.invoices || [] };
       break;
     case "RESET":
-      next = DEFAULT_DATA;
+      next = { expenses: [], tags: DEFAULT_TAGS, parents: [], invoices: [], settings: { currency: "$", language: state.settings.language, theme: "dark" } };
       break;
     default:
       return state;
@@ -131,36 +157,35 @@ export function AppProvider({ children }) {
     setTimeout(() => setToast(null), 2500);
   }, []);
 
-  const addItem = useCallback((space, item) => dispatch({ type: "ADD_ITEM", space, item }), []);
-  const updateItem = useCallback((space, item) => dispatch({ type: "UPDATE_ITEM", space, item }), []);
-  const deleteItem = useCallback((space, id) => dispatch({ type: "DELETE_ITEM", space, id }), []);
-  const addRecipe = useCallback((recipe) => dispatch({ type: "ADD_RECIPE", recipe }), []);
-  const updateRecipe = useCallback((recipe) => dispatch({ type: "UPDATE_RECIPE", recipe }), []);
-  const deleteRecipe = useCallback((id) => dispatch({ type: "DELETE_RECIPE", id }), []);
-  const addCategory = useCallback((space, category) => dispatch({ type: "ADD_CATEGORY", space, category }), []);
-  const removeCategory = useCallback((space, category) => dispatch({ type: "REMOVE_CATEGORY", space, category }), []);
-  const setCurrency = useCallback((currency) => dispatch({ type: "SET_CURRENCY", currency }), []);
+  const addExpense = useCallback((item) => dispatch({ type: "ADD_EXPENSE", item }), []);
+  const updateExpense = useCallback((item) => dispatch({ type: "UPDATE_EXPENSE", item }), []);
+  const deleteExpense = useCallback((id) => dispatch({ type: "DELETE_EXPENSE", id }), []);
+  const addTag = useCallback((tag) => dispatch({ type: "ADD_TAG", tag }), []);
+  const removeTag = useCallback((id) => dispatch({ type: "REMOVE_TAG", id }), []);
+  const addParent = useCallback((item) => dispatch({ type: "ADD_PARENT", item }), []);
+  const updateParent = useCallback((item) => dispatch({ type: "UPDATE_PARENT", item }), []);
+  const deleteParent = useCallback((id) => dispatch({ type: "DELETE_PARENT", id }), []);
+  const addInvoice = useCallback((item) => dispatch({ type: "ADD_INVOICE", item }), []);
+  const updateInvoice = useCallback((item) => dispatch({ type: "UPDATE_INVOICE", item }), []);
+  const deleteInvoice = useCallback((id) => dispatch({ type: "DELETE_INVOICE", id }), []);
+  const setSettings = useCallback((s) => dispatch({ type: "SET_SETTINGS", settings: s }), []);
   const replaceAll = useCallback((data) => dispatch({ type: "REPLACE_ALL", data }), []);
   const resetData = useCallback(() => dispatch({ type: "RESET" }), []);
 
-  const allRecs = [...state.consumables, ...state.durables, ...state.car, ...state.finances];
-  const currency = state.settings?.currency || DEFAULT_CURRENCY;
+  const currency = state.settings?.currency || "$";
+  const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 
-  const monthly =
-    state.consumables.reduce((s, r) => s + (r.monthly || 0), 0) +
-    state.durables.reduce((s, r) => s + (r.monthly || 0), 0) +
-    state.car.filter(r => r.type === "Fuel").reduce((s, r) => s + (r.cost || 0), 0) / 2 +
-    state.finances.reduce((s, r) => s + (r.amount || 0), 0);
+  const monthly = state.expenses.reduce((s, r) => s + (r.monthly || 0), 0);
 
   return (
     <AppContext.Provider value={{
       state, dispatch, toast, showToast,
-      addItem, updateItem, deleteItem,
-      addRecipe, updateRecipe, deleteRecipe,
-      addCategory, removeCategory,
-      setCurrency, replaceAll, resetData,
-      allRecs, monthly, currency,
-      TODAY: new Date("2026-06-17")
+      addExpense, updateExpense, deleteExpense,
+      addTag, removeTag,
+      addParent, updateParent, deleteParent,
+      addInvoice, updateInvoice, deleteInvoice,
+      setSettings, replaceAll, resetData,
+      currency, TODAY, monthly
     }}>
       {children}
     </AppContext.Provider>
