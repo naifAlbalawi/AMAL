@@ -1,12 +1,15 @@
-* { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+* { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; box-sizing: border-box; }
 [draggable="true"] { -webkit-user-drag: element; }
 * { scroll-behavior: smooth; }
 ::-webkit-scrollbar { width: 0px; background: transparent; }
-button, [role="button"] { min-height: 44px; min-width: 44px; }
-body { overscroll-behavior-y: none; }
+button, [role="button"] { min-height: 44px; min-width: 44px; touch-action: manipulation; }
+body { overscroll-behavior-y: none; background: #0F0F0F; color: #fff; }
+
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .animate-fade-in { animation: fadeIn 0.25s ease-out; }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-.animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+input, select, textarea { font-family: inherit; }
+[dir="rtl"] .input-row { flex-direction: row-reverse; }
+[dir="rtl"] .nav-item { flex-direction: column; }
