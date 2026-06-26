@@ -4,138 +4,139 @@ import { GanttStrip } from "../components/GanttStrip.jsx";
 import { BottomSheet } from "../components/BottomSheet.jsx";
 import { ConfirmModal } from "../components/ConfirmModal.jsx";
 
-const T = {
-  bg: "#F0F2F7", surface: "#FFFFFF", surfaceHover: "#F4F6FB",
-  border: "#E2E6EF", borderStrong: "#C8CFDE",
-  accent: "#3B5BDB", accentLight: "#EEF2FF",
-  orange: "#FF6B35", orangeLight: "#FFF0EB",
-  green: "#2F9E44", greenLight: "#EBFBEE",
-  amber: "#E67700", amberLight: "#FFF8E6",
-  red: "#E03131", redLight: "#FFF0F0",
-  text: "#1A1D23", textMid: "#4A5160", textMuted: "#8B92A5",
-};
-
-const $ = (n) => `$${Number(n).toFixed(2)}`;
+const $ = (n, c) => `${c || "$"}${Number(n).toFixed(2)}`;
 const daysTo = (s, today) => Math.round((new Date(s) - today) / 86400000);
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-const statusStyle = (s) => ({
-  Low: { bg: T.orangeLight, color: T.orange },
-  Worn: { bg: T.amberLight, color: T.amber },
-  OK: { bg: T.greenLight, color: T.green },
-  Good: { bg: T.greenLight, color: T.green },
-}[s] || { bg: T.bg, color: T.textMuted });
+const SPACE_META = {
+  consumables: { label: "Consumables", icon: "🧴", color: "#3B5BDB", hasPrice: true, hasMonthly: true, hasStatus: true, dateLabel: "Bought", endLabel: "Runs out" },
+  durables:    { label: "Durables",    icon: "👟", color: "#2F9E44", hasPrice: true, hasMonthly: true, hasStatus: true, dateLabel: "Bought", endLabel: "Replace by" },
+  car:         { label: "Car",         icon: "🚗", color: "#E67700", hasCost: true, hasType: true, dateLabel: "Date", endLabel: "Due / Ends" },
+  finances:    { label: "Finances",    icon: "💰", color: "#7950F2", hasAmount: true, hasType: true, dateLabel: "Date", endLabel: "Next due" },
+};
 
-const SPACES_META = {
-  consumables: { label: "Consumables", icon: "◎", color: "#3B5BDB", fields: ["name","price","monthly","ends","status"] },
-  durables:    { label: "Durables",    icon: "◈", color: "#2F9E44", fields: ["name","price","monthly","ends","status"] },
-  car:         { label: "Car",         icon: "◐", color: "#E67700", fields: ["name","date","cost","type","ends"] },
-  finances:    { label: "Finances",    icon: "◆", color: "#7950F2", fields: ["name","amount","date","type","ends"] },
+const STATUS_COLORS = {
+  Low: "#FF6B35", Worn: "#E67700", OK: "#2F9E44", Good: "#2F9E44", Stocked: "#3B5BDB",
+  Damaged: "#E03131", Retired: "#888",
+  Service: "#E67700", Fuel: "#FF6B35", Annual: "#E03131", Repair: "#E67700",
+  Cleaning: "#3B5BDB", Parking: "#E67700", Toll: "#7950F2", Fine: "#E03131",
+  Fixed: "#7950F2", Variable: "#3B5BDB", Subscription: "#7950F2", "One-time": "#3B5BDB",
+  Investment: "#2F9E44", Savings: "#3B5BDB"
 };
 
 function getDefaultItem(space) {
   const today = new Date().toISOString().slice(0, 10);
   const nextMonth = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
   switch (space) {
-    case "consumables": return { id: uid(), name: "", price: 0, bought: today, duration: 30, ends: nextMonth, monthly: 0, status: "OK", color: "#3B5BDB" };
-    case "durables":    return { id: uid(), name: "", price: 0, bought: today, ends: nextMonth, monthly: 0, status: "Good", color: "#2F9E44" };
-    case "car":         return { id: uid(), name: "", date: today, ends: nextMonth, cost: 0, type: "Service", color: "#E67700" };
-    case "finances":    return { id: uid(), name: "", amount: 0, date: today, ends: nextMonth, type: "Fixed", color: "#7950F2" };
+    case "consumables": return { id: uid(), name: "", price: 0, bought: today, duration: 30, ends: nextMonth, monthly: 0, status: "OK" };
+    case "durables":    return { id: uid(), name: "", price: 0, bought: today, ends: nextMonth, monthly: 0, status: "Good" };
+    case "car":         return { id: uid(), name: "", date: today, ends: nextMonth, cost: 0, type: "Service" };
+    case "finances":    return { id: uid(), name: "", amount: 0, date: today, ends: nextMonth, type: "Fixed" };
     default: return { id: uid(), name: "" };
   }
 }
 
-function getColumns(space) {
-  switch (space) {
-    case "consumables": return [
-      { key: "name", label: "Item", render: r => <strong style={{ color: T.text }}>{r.name}</strong> },
-      { key: "price", label: "Price", render: r => $(r.price) },
-      { key: "monthly", label: "$/mo", render: r => <span style={{ color: T.accent, fontWeight: 700 }}>{$(r.monthly)}</span> },
-      { key: "ends", label: "Runs out", render: (r, today) => { const d = daysTo(r.ends, today); return <span style={{ color: d < 0 ? T.red : d < 7 ? T.orange : T.green, fontWeight: 600 }}>{r.ends} ({d < 0 ? "overdue" : d + "d"})</span>; } },
-      { key: "status", label: "Status", render: r => { const s = statusStyle(r.status); return <span style={{ background: s.bg, color: s.color, padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700 }}>{r.status}</span>; } },
-    ];
-    case "durables": return [
-      { key: "name", label: "Item", render: r => <strong style={{ color: T.text }}>{r.name}</strong> },
-      { key: "price", label: "Price", render: r => $(r.price) },
-      { key: "monthly", label: "$/mo", render: r => <span style={{ color: T.green, fontWeight: 700 }}>{$(r.monthly)}</span> },
-      { key: "ends", label: "Replace by", render: (r, today) => { const d = daysTo(r.ends, today); return <span style={{ color: d < 60 ? T.amber : T.textMid }}>{r.ends}</span>; } },
-      { key: "status", label: "Condition", render: r => { const s = statusStyle(r.status); return <span style={{ background: s.bg, color: s.color, padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700 }}>{r.status}</span>; } },
-    ];
-    case "car": return [
-      { key: "name", label: "Event", render: r => <strong style={{ color: T.text }}>{r.name}</strong> },
-      { key: "date", label: "Date", render: r => r.date },
-      { key: "cost", label: "Cost", render: r => <span style={{ color: T.amber, fontWeight: 700 }}>{$(r.cost)}</span> },
-      { key: "type", label: "Type", render: r => <span style={{ background: T.amberLight, color: T.amber, padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700 }}>{r.type}</span> },
-      { key: "ends", label: "Due / Ends", render: r => r.ends },
-    ];
-    case "finances": return [
-      { key: "name", label: "Category", render: r => <strong style={{ color: T.text }}>{r.name}</strong> },
-      { key: "amount", label: "Amount", render: r => <span style={{ color: "#7950F2", fontWeight: 700 }}>{$(r.amount)}</span> },
-      { key: "date", label: "Date", render: r => r.date },
-      { key: "type", label: "Type", render: r => <span style={{ background: "#F3F0FF", color: "#7950F2", padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700 }}>{r.type}</span> },
-      { key: "ends", label: "Next due", render: r => r.ends },
-    ];
-    default: return [];
-  }
+function Input({ label, value, onChange, type = "text", placeholder = "", step, min }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ fontSize: 11, color: "#666", fontWeight: 700, marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</label>
+      <input
+        type={type}
+        step={step}
+        min={min}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        style={{
+          width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid #333",
+          fontSize: 14, background: "#0F0F0F", color: "#fff", outline: "none",
+          transition: "border-color 0.2s", fontFamily: "inherit"
+        }}
+        onFocus={e => e.target.style.borderColor = "#3B5BDB"}
+        onBlur={e => e.target.style.borderColor = "#333"}
+      />
+    </div>
+  );
 }
 
-function ItemForm({ space, item, onChange }) {
-  const today = new Date().toISOString().slice(0, 10);
-  const inputStyle = {
-    width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`,
-    fontSize: 13, marginBottom: 10, background: "#fff", color: T.text,
-    outline: "none", fontFamily: "inherit"
-  };
-  const labelStyle = { fontSize: 11, color: T.textMuted, fontWeight: 600, marginBottom: 4, display: "block", textTransform: "uppercase", letterSpacing: "0.04em" };
+function Select({ label, value, onChange, options }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ fontSize: 11, color: "#666", fontWeight: 700, marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</label>
+      <div style={{ position: "relative" }}>
+        <select
+          value={value}
+          onChange={onChange}
+          style={{
+            width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid #333",
+            fontSize: 14, background: "#0F0F0F", color: "#fff", outline: "none",
+            appearance: "none", fontFamily: "inherit"
+          }}
+        >
+          {options.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+        <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", color: "#666", fontSize: 10, pointerEvents: "none" }}>▼</span>
+      </div>
+    </div>
+  );
+}
+
+function ItemForm({ space, item, onChange, categories, onAddCategory }) {
+  const meta = SPACE_META[space];
+  const [newCat, setNewCat] = useState("");
+  const cats = categories[space] || [];
 
   return (
     <div>
-      <label style={labelStyle}>Name</label>
-      <input style={inputStyle} value={item.name} onChange={e => onChange({ ...item, name: e.target.value })} placeholder="Item name" />
+      <Input label="Name" value={item.name} onChange={e => onChange({ ...item, name: e.target.value })} placeholder={`e.g. ${space === "consumables" ? "Shampoo" : space === "car" ? "Oil Change" : "Rent"}`} />
 
-      {(space === "consumables" || space === "durables") && (
+      {meta.hasPrice && (
         <>
-          <label style={labelStyle}>Price</label>
-          <input style={inputStyle} type="number" step="0.01" value={item.price || ""} onChange={e => onChange({ ...item, price: parseFloat(e.target.value) || 0 })} placeholder="0.00" />
-          <label style={labelStyle}>Monthly Cost</label>
-          <input style={inputStyle} type="number" step="0.01" value={item.monthly || ""} onChange={e => onChange({ ...item, monthly: parseFloat(e.target.value) || 0 })} placeholder="0.00" />
-          <label style={labelStyle}>Ends On</label>
-          <input style={inputStyle} type="date" value={item.ends} onChange={e => onChange({ ...item, ends: e.target.value })} />
-          <label style={labelStyle}>Status</label>
-          <select style={{ ...inputStyle, height: 40 }} value={item.status} onChange={e => onChange({ ...item, status: e.target.value })}>
-            {space === "consumables" ? ["Low", "OK"].map(s => <option key={s} value={s}>{s}</option>)
-              : ["Good", "Worn"].map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <Input label="Price" value={item.price || ""} onChange={e => onChange({ ...item, price: parseFloat(e.target.value) || 0 })} type="number" step="0.01" />
+          <Input label="Monthly Cost" value={item.monthly || ""} onChange={e => onChange({ ...item, monthly: parseFloat(e.target.value) || 0 })} type="number" step="0.01" />
         </>
       )}
 
-      {space === "car" && (
-        <>
-          <label style={labelStyle}>Date</label>
-          <input style={inputStyle} type="date" value={item.date} onChange={e => onChange({ ...item, date: e.target.value })} />
-          <label style={labelStyle}>Cost</label>
-          <input style={inputStyle} type="number" step="0.01" value={item.cost || ""} onChange={e => onChange({ ...item, cost: parseFloat(e.target.value) || 0 })} placeholder="0.00" />
-          <label style={labelStyle}>Type</label>
-          <select style={{ ...inputStyle, height: 40 }} value={item.type} onChange={e => onChange({ ...item, type: e.target.value })}>
-            {["Service", "Fuel", "Annual", "Repair"].map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <label style={labelStyle}>Ends / Due</label>
-          <input style={inputStyle} type="date" value={item.ends} onChange={e => onChange({ ...item, ends: e.target.value })} />
-        </>
+      {meta.hasCost && (
+        <Input label="Cost" value={item.cost || ""} onChange={e => onChange({ ...item, cost: parseFloat(e.target.value) || 0 })} type="number" step="0.01" />
       )}
 
-      {space === "finances" && (
+      {meta.hasAmount && (
+        <Input label="Amount" value={item.amount || ""} onChange={e => onChange({ ...item, amount: parseFloat(e.target.value) || 0 })} type="number" step="0.01" />
+      )}
+
+      <Input label={meta.dateLabel} value={item.date || item.bought || ""} onChange={e => {
+        const val = e.target.value;
+        if (item.bought !== undefined) onChange({ ...item, bought: val });
+        else onChange({ ...item, date: val });
+      }} type="date" />
+
+      <Input label={meta.endLabel} value={item.ends} onChange={e => onChange({ ...item, ends: e.target.value })} type="date" />
+
+      {(meta.hasStatus || meta.hasType) && (
         <>
-          <label style={labelStyle}>Amount</label>
-          <input style={inputStyle} type="number" step="0.01" value={item.amount || ""} onChange={e => onChange({ ...item, amount: parseFloat(e.target.value) || 0 })} placeholder="0.00" />
-          <label style={labelStyle}>Date</label>
-          <input style={inputStyle} type="date" value={item.date} onChange={e => onChange({ ...item, date: e.target.value })} />
-          <label style={labelStyle}>Type</label>
-          <select style={{ ...inputStyle, height: 40 }} value={item.type} onChange={e => onChange({ ...item, type: e.target.value })}>
-            {["Fixed", "Variable"].map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <label style={labelStyle}>Next Due</label>
-          <input style={inputStyle} type="date" value={item.ends} onChange={e => onChange({ ...item, ends: e.target.value })} />
+          <Select
+            label={meta.hasStatus ? "Status" : "Type"}
+            value={item.status || item.type || ""}
+            onChange={e => {
+              if (meta.hasStatus) onChange({ ...item, status: e.target.value });
+              else onChange({ ...item, type: e.target.value });
+            }}
+            options={cats}
+          />
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            <input
+              type="text"
+              placeholder="New category..."
+              value={newCat}
+              onChange={e => setNewCat(e.target.value)}
+              style={{ flex: 1, padding: "10px 12px", borderRadius: 10, border: "1px solid #333", background: "#0F0F0F", color: "#fff", fontSize: 13, outline: "none" }}
+            />
+            <button
+              onClick={() => { if (newCat.trim()) { onAddCategory(newCat.trim()); setNewCat(""); } }}
+              style={{ padding: "10px 16px", borderRadius: 10, border: "none", background: "#3B5BDB", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+            >+ Add</button>
+          </div>
         </>
       )}
     </div>
@@ -143,13 +144,15 @@ function ItemForm({ space, item, onChange }) {
 }
 
 export default function CollectionView({ spaceId }) {
-  const { state, addItem, updateItem, deleteItem, TODAY } = useApp();
+  const { state, addItem, updateItem, deleteItem, addCategory, removeCategory, currency, TODAY, showToast } = useApp();
   const records = state[spaceId] || [];
-  const meta = SPACES_META[spaceId];
+  const meta = SPACE_META[spaceId];
+  const categories = state.categories || {};
 
   const [view, setView] = useState("list");
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [catSheetOpen, setCatSheetOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
   const [split, setSplit] = useState(0.55);
@@ -158,22 +161,14 @@ export default function CollectionView({ spaceId }) {
 
   const filtered = records.filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
   const totalMonthly = records.reduce((s, r) => s + (r.monthly || r.amount || r.cost || 0), 0);
-  const cols = getColumns(spaceId);
 
   const handleSave = () => {
-    if (!editingItem?.name.trim()) return;
-    if (records.find(r => r.id === editingItem.id)) {
-      updateItem(spaceId, editingItem);
-    } else {
-      addItem(spaceId, editingItem);
-    }
+    if (!editingItem?.name.trim()) { showToast("Name is required", "warning"); return; }
+    if (records.find(r => r.id === editingItem.id)) updateItem(spaceId, editingItem);
+    else addItem(spaceId, editingItem);
+    showToast(records.find(r => r.id === editingItem.id) ? "Updated!" : "Added!", "success");
     setSheetOpen(false);
     setEditingItem(null);
-  };
-
-  const handleDelete = () => {
-    if (confirmId) deleteItem(spaceId, confirmId);
-    setConfirmId(null);
   };
 
   useEffect(() => {
@@ -181,166 +176,131 @@ export default function CollectionView({ spaceId }) {
       if (!draggingSplit || !containerRef.current) return;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const rect = containerRef.current.getBoundingClientRect();
-      const frac = (clientY - rect.top) / rect.height;
-      setSplit(Math.max(0.25, Math.min(0.8, frac)));
+      setSplit(Math.max(0.25, Math.min(0.8, (clientY - rect.top) / rect.height)));
     };
     const onEnd = () => setDraggingSplit(false);
     window.addEventListener("touchmove", onMove, { passive: false });
     window.addEventListener("touchend", onEnd);
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onEnd);
-    return () => {
-      window.removeEventListener("touchmove", onMove);
-      window.removeEventListener("touchend", onEnd);
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onEnd);
-    };
+    return () => { window.removeEventListener("touchmove", onMove); window.removeEventListener("touchend", onEnd); window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onEnd); };
   }, [draggingSplit]);
+
+  const getStatusColor = (val) => STATUS_COLORS[val] || "#666";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }} ref={containerRef}>
-      <div style={{
-        display: "flex", alignItems: "center", gap: 8, padding: "10px 14px",
-        borderBottom: `1px solid ${T.border}`, background: T.surface, flexShrink: 0, flexWrap: "wrap"
-      }}>
-        <span style={{ fontSize: 16 }}>{meta.icon}</span>
-        <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{meta.label}</span>
-        <span style={{ color: T.textMuted, fontSize: 12 }}>{filtered.length} items</span>
-        <span style={{ color: meta.color, fontWeight: 700, fontSize: 12 }}>{$(totalMonthly)}/mo</span>
-        <div style={{ flex: 1 }} />
-        <input
-          type="text"
-          placeholder="Search..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${T.border}`, fontSize: 12, width: 100, outline: "none" }}
-        />
-        <div style={{ display: "flex", background: T.bg, borderRadius: 6, padding: 2, border: `1px solid ${T.border}` }}>
-          {[["list", "≡"], ["board", "⊞"]].map(([v, label]) => (
-            <button key={v} onClick={() => setView(v)} style={{
-              padding: "4px 10px", borderRadius: 4, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
-              background: view === v ? T.surface : "transparent", color: view === v ? T.accent : T.textMuted,
-              boxShadow: view === v ? "0 1px 3px rgba(0,0,0,0.1)" : "none", minHeight: 32
-            }}>{label}</button>
-          ))}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", borderBottom: "1px solid #222", background: "#0F0F0F", flexShrink: 0, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 20 }}>{meta.icon}</span>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>{meta.label}</div>
+          <div style={{ fontSize: 11, color: "#555" }}>{filtered.length} items · {$(totalMonthly, currency)}/mo</div>
         </div>
+        <div style={{ flex: 1 }} />
+        <button onClick={() => setCatSheetOpen(true)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #333", background: "#1a1a1a", color: "#888", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>🏷️ Tags</button>
         <button onClick={() => { setEditingItem(getDefaultItem(spaceId)); setSheetOpen(true); }} style={{
-          background: T.accent, color: "#fff", border: "none", borderRadius: 6,
-          padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600, minHeight: 32
+          background: meta.color, color: "#fff", border: "none", borderRadius: 10,
+          padding: "8px 14px", cursor: "pointer", fontSize: 13, fontWeight: 700, minHeight: 36
         }}>+ Add</button>
+      </div>
+
+      <div style={{ padding: "8px 16px", background: "#0F0F0F", borderBottom: "1px solid #222" }}>
+        <input type="text" placeholder="🔍 Search items..." value={search} onChange={e => setSearch(e.target.value)}
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #222", background: "#1a1a1a", color: "#fff", fontSize: 14, outline: "none" }} />
+      </div>
+
+      <div style={{ display: "flex", background: "#0F0F0F", borderBottom: "1px solid #222" }}>
+        {["list", "board"].map(v => (
+          <button key={v} onClick={() => setView(v)} style={{
+            flex: 1, padding: "10px", border: "none", borderBottom: view === v ? `2px solid ${meta.color}` : "2px solid transparent",
+            background: "transparent", color: view === v ? meta.color : "#555", fontWeight: view === v ? 700 : 500,
+            fontSize: 13, cursor: "pointer", textTransform: "capitalize"
+          }}>{v}</button>
+        ))}
       </div>
 
       <div style={{ flex: split, overflow: "auto", minHeight: 80, WebkitOverflowScrolling: "touch" }}>
         {view === "list" ? (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: T.bg }}>
-                {cols.map(c => (
-                  <th key={c.key} style={{ padding: "8px 10px", textAlign: "left", fontSize: 11, color: T.textMuted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: `2px solid ${T.border}`, whiteSpace: "nowrap" }}>{c.label}</th>
-                ))}
-                <th style={{ padding: "8px 10px", width: 40 }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r, i) => (
-                <tr key={r.id} style={{ borderBottom: `1px solid ${T.border}`, background: i % 2 === 0 ? "#fff" : T.bg }}
-                  onTouchStart={e => e.currentTarget.style.background = T.accentLight}
-                  onTouchEnd={e => e.currentTarget.style.background = i % 2 === 0 ? "#fff" : T.bg}>
-                  {cols.map(c => (
-                    <td key={c.key} style={{ padding: "9px 10px", color: T.textMid, verticalAlign: "middle", whiteSpace: "nowrap" }}>
-                      {c.render ? c.render(r, TODAY) : r[c.key]}
-                    </td>
-                  ))}
-                  <td style={{ padding: "4px" }}>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      <button onClick={() => { setEditingItem({ ...r }); setSheetOpen(true); }} style={{
-                        background: T.accentLight, color: T.accent, border: "none", borderRadius: 6,
-                        padding: "4px 8px", fontSize: 11, fontWeight: 600, cursor: "pointer", minHeight: 28
-                      }}>Edit</button>
-                      <button onClick={() => setConfirmId(r.id)} style={{
-                        background: T.redLight, color: T.red, border: "none", borderRadius: 6,
-                        padding: "4px 8px", fontSize: 11, fontWeight: 600, cursor: "pointer", minHeight: 28
-                      }}>Del</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ padding: 8 }}>
+            {filtered.map(r => (
+              <div key={r.id} style={{ background: "#1a1a1a", border: "1px solid #222", borderRadius: 14, padding: "14px 16px", marginBottom: 8, display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: `${getStatusColor(r.status || r.type)}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                  {meta.icon}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</div>
+                  <div style={{ fontSize: 12, color: "#555", display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ color: meta.color, fontWeight: 700 }}>{$(r.monthly || r.amount || r.cost || r.price || 0, currency)}</span>
+                    <span style={{ background: `${getStatusColor(r.status || r.type)}22`, color: getStatusColor(r.status || r.type), padding: "1px 8px", borderRadius: 99, fontSize: 11, fontWeight: 700 }}>{r.status || r.type}</span>
+                    <span>{r.ends}</span>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  <button onClick={() => { setEditingItem({ ...r }); setSheetOpen(true); }} style={{ padding: "6px 12px", borderRadius: 8, background: "#2a2a2a", color: "#aaa", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Edit</button>
+                  <button onClick={() => setConfirmId(r.id)} style={{ padding: "6px 12px", borderRadius: 8, background: "rgba(224,49,49,0.15)", color: "#E03131", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Del</button>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
-          <BoardView records={filtered} spaceId={spaceId} onEdit={r => { setEditingItem({ ...r }); setSheetOpen(true); }} onDelete={id => setConfirmId(id)} />
+          <BoardView records={filtered} spaceId={spaceId} meta={meta} currency={currency} onEdit={r => { setEditingItem({ ...r }); setSheetOpen(true); }} onDelete={id => setConfirmId(id)} />
         )}
       </div>
 
       <div onTouchStart={e => { e.preventDefault(); setDraggingSplit(true); }} onMouseDown={e => { e.preventDefault(); setDraggingSplit(true); }}
-        style={{ height: 6, background: T.bg, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, cursor: "row-resize", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", userSelect: "none", touchAction: "none" }}>
-        <div style={{ width: 40, height: 3, background: T.borderStrong, borderRadius: 99 }} />
+        style={{ height: 6, background: "#1a1a1a", borderTop: "1px solid #222", borderBottom: "1px solid #222", cursor: "row-resize", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 40, height: 3, background: "#333", borderRadius: 99 }} />
       </div>
 
-      <div style={{ flex: 1 - split, overflow: "auto", minHeight: 60, background: T.surface, WebkitOverflowScrolling: "touch" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderBottom: `1px solid ${T.border}`, background: T.bg, position: "sticky", top: 0, zIndex: 1 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.08em" }}>📅 Timeline</span>
-          <span style={{ fontSize: 11, color: T.textMuted }}>May 2026 → Dec 2026</span>
-        </div>
+      <div style={{ flex: 1 - split, overflow: "auto", minHeight: 60, background: "#0F0F0F", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: "0.08em" }}>📅 Timeline · May → Dec 2026</div>
         <GanttStrip records={filtered} windowStart={new Date("2026-05-01")} days={210} rowHeight={28} compact />
       </div>
 
-      <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title={editingItem?.id && records.find(r => r.id === editingItem.id) ? "Edit Item" : "Add Item"}>
-        {editingItem && <ItemForm space={spaceId} item={editingItem} onChange={setEditingItem} />}
-        <button onClick={handleSave} style={{
-          width: "100%", padding: "12px", borderRadius: 8, border: "none",
-          background: T.accent, color: "#fff", fontWeight: 700, fontSize: 14,
-          cursor: "pointer", marginTop: 8
-        }}>Save</button>
+      <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title={editingItem?.id && records.find(r => r.id === editingItem.id) ? "Edit Item" : `New ${meta.label.slice(0, -1)}`}>
+        {editingItem && <ItemForm space={spaceId} item={editingItem} onChange={setEditingItem} categories={categories} onAddCategory={(cat) => addCategory(spaceId, cat)} />}
+        <button onClick={handleSave} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: meta.color, color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer", marginTop: 4 }}>Save</button>
       </BottomSheet>
 
-      <ConfirmModal
-        open={!!confirmId}
-        title="Delete Item"
-        message="Are you sure you want to delete this item? This cannot be undone."
-        onConfirm={handleDelete}
-        onCancel={() => setConfirmId(null)}
-      />
+      <BottomSheet open={catSheetOpen} onClose={() => setCatSheetOpen(false)} title="Manage Categories" maxHeight="70vh">
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 12, color: "#666", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Current categories for {meta.label}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {(categories[spaceId] || []).map(cat => (
+              <div key={cat} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", background: "#222", borderRadius: 10, border: "1px solid #333" }}>
+                <span style={{ fontSize: 13, color: "#ccc" }}>{cat}</span>
+                <button onClick={() => removeCategory(spaceId, cat)} style={{ color: "#E03131", fontSize: 16, fontWeight: 700, cursor: "pointer", background: "none", border: "none", padding: 0, minHeight: 0, minWidth: 0 }}>×</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </BottomSheet>
+
+      <ConfirmModal open={!!confirmId} title="Delete Item?" message="This will permanently remove this item." onConfirm={() => { deleteItem(spaceId, confirmId); showToast("Deleted", "info"); setConfirmId(null); }} onCancel={() => setConfirmId(null)} />
     </div>
   );
 }
 
-function BoardView({ records, spaceId, onEdit, onDelete }) {
+function BoardView({ records, spaceId, meta, currency, onEdit, onDelete }) {
   const groups = {};
-  records.forEach(r => {
-    const key = r.status || r.type || "Other";
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(r);
-  });
-  const colColors = {
-    Low: T.orange, Worn: T.amber, OK: T.green, Good: T.green,
-    Service: T.amber, Fuel: T.orange, Annual: T.red, Repair: T.red,
-    Fixed: "#7950F2", Variable: T.accent
-  };
+  records.forEach(r => { const k = r.status || r.type || "Other"; if (!groups[k]) groups[k] = []; groups[k].push(r); });
   return (
     <div style={{ display: "flex", gap: 12, padding: 14, overflowX: "auto", alignItems: "flex-start", WebkitOverflowScrolling: "touch" }}>
       {Object.entries(groups).map(([key, items]) => (
-        <div key={key} style={{ minWidth: 220, flex: "0 0 220px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-            <div style={{ width: 8, height: 8, borderRadius: 99, background: colColors[key] || T.textMuted }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: T.textMid, textTransform: "uppercase", letterSpacing: "0.06em" }}>{key}</span>
-            <span style={{ fontSize: 11, color: T.textMuted, marginLeft: "auto", background: T.bg, borderRadius: 99, padding: "1px 7px" }}>{items.length}</span>
+        <div key={key} style={{ minWidth: 260, flex: "0 0 260px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "0 4px" }}>
+            <div style={{ width: 8, height: 8, borderRadius: 99, background: STATUS_COLORS[key] || "#666" }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: "0.06em" }}>{key}</span>
+            <span style={{ fontSize: 11, color: "#555", marginLeft: "auto", background: "#222", borderRadius: 99, padding: "2px 8px" }}>{items.length}</span>
           </div>
           {items.map(r => (
-            <div key={r.id} style={{
-              background: T.surface, border: `1px solid ${T.border}`,
-              borderLeft: `3px solid ${colColors[key] || T.accent}`,
-              borderRadius: 8, padding: "10px 12px", marginBottom: 8,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.06)"
-            }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.text, marginBottom: 4 }}>{r.name}</div>
-              {r.price && <div style={{ fontSize: 11, color: T.textMuted }}>${r.price.toFixed(2)}</div>}
-              {r.cost && <div style={{ fontSize: 11, color: T.amber, fontWeight: 600 }}>${r.cost.toFixed(2)}</div>}
-              {r.amount && <div style={{ fontSize: 11, color: "#7950F2", fontWeight: 600 }}>${r.amount.toFixed(2)}</div>}
-              {r.ends && <div style={{ fontSize: 10, color: daysTo(r.ends, new Date("2026-06-17")) < 7 ? T.orange : T.textMuted, marginTop: 3 }}>→ {r.ends}</div>}
-              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                <button onClick={() => onEdit(r)} style={{ flex: 1, background: T.accentLight, color: T.accent, border: "none", borderRadius: 6, padding: "4px 0", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Edit</button>
-                <button onClick={() => onDelete(r.id)} style={{ flex: 1, background: T.redLight, color: T.red, border: "none", borderRadius: 6, padding: "4px 0", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Delete</button>
+            <div key={r.id} style={{ background: "#1a1a1a", border: "1px solid #222", borderLeft: `3px solid ${STATUS_COLORS[key] || meta.color}`, borderRadius: 12, padding: "14px", marginBottom: 10 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 6 }}>{r.name}</div>
+              <div style={{ fontSize: 12, color: meta.color, fontWeight: 700, marginBottom: 4 }}>{$(r.monthly || r.amount || r.cost || r.price || 0, currency)}</div>
+              <div style={{ fontSize: 11, color: "#555" }}>→ {r.ends}</div>
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button onClick={() => onEdit(r)} style={{ flex: 1, padding: "8px", borderRadius: 8, background: "#2a2a2a", color: "#aaa", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none" }}>Edit</button>
+                <button onClick={() => onDelete(r.id)} style={{ flex: 1, padding: "8px", borderRadius: 8, background: "rgba(224,49,49,0.15)", color: "#E03131", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none" }}>Delete</button>
               </div>
             </div>
           ))}
