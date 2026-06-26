@@ -13,6 +13,7 @@ const DEFAULT_TAGS = [
 ];
 
 function daysBetween(a, b) {
+  if (!a || !b) return 0;
   const ms = new Date(b) - new Date(a);
   return Math.max(0, Math.round(ms / 86400000));
 }
@@ -47,7 +48,7 @@ function migrateV2(v2) {
   return {
     expenses, tags, parents: [],
     invoices,
-    settings: { currency: v2.settings?.currency || "$", language: loadLang(), theme: v2.settings?.theme || "dark" }
+    settings: { currency: v2.settings?.currency || "$", language: loadLang(), theme: "dark", aiEnabled: false }
   };
 }
 
@@ -59,7 +60,8 @@ function loadData() {
       if (!p.tags) p.tags = DEFAULT_TAGS;
       if (!p.parents) p.parents = [];
       if (!p.invoices) p.invoices = [];
-      if (!p.settings) p.settings = { currency: "$", language: loadLang(), theme: "dark" };
+      if (!p.settings) p.settings = { currency: "$", language: loadLang(), theme: "dark", aiEnabled: false };
+      if (p.settings.aiEnabled === undefined) p.settings.aiEnabled = false;
       return p;
     }
     const legacy = localStorage.getItem(LEGACY_KEY);
@@ -71,7 +73,7 @@ function loadData() {
   } catch (e) { console.error("Load failed", e); }
   return {
     expenses: [], tags: DEFAULT_TAGS, parents: [], invoices: [],
-    settings: { currency: "$", language: loadLang(), theme: "dark" }
+    settings: { currency: "$", language: loadLang(), theme: "dark", aiEnabled: false }
   };
 }
 
@@ -137,7 +139,7 @@ function reducer(state, action) {
       next = { ...loadData(), ...action.data, tags: action.data.tags || DEFAULT_TAGS, parents: action.data.parents || [], invoices: action.data.invoices || [] };
       break;
     case "RESET":
-      next = { expenses: [], tags: DEFAULT_TAGS, parents: [], invoices: [], settings: { currency: "$", language: state.settings.language, theme: "dark" } };
+      next = { expenses: [], tags: DEFAULT_TAGS, parents: [], invoices: [], settings: { currency: "$", language: state.settings.language, theme: "dark", aiEnabled: false } };
       break;
     default:
       return state;
