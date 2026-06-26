@@ -1,180 +1,78 @@
-import { useState, useRef } from "react";
-import { useApp } from "../context/AppContext.jsx";
-import { exportData, readImportFile } from "../utils/exportImport.js";
-import { ConfirmModal } from "../components/ConfirmModal.jsx";
+import { useState } from "react";
+import { useApp } from "../context/AppContext";
+import { exportData } from "../utils/exportImport";
+import { readImportFile } from "../utils/exportImport";
+import { setLang, t, getLang, isRTL } from "../utils/i18n";
 
-const CURRENCIES = [
-  { code: "$", name: "US Dollar", flag: "🇺🇸" },
-  { code: "€", name: "Euro", flag: "🇪🇺" },
-  { code: "£", name: "British Pound", flag: "🇬🇧" },
-  { code: "¥", name: "Japanese Yen", flag: "🇯🇵" },
-  { code: "₹", name: "Indian Rupee", flag: "🇮🇳" },
-  { code: "₩", name: "Korean Won", flag: "🇰🇷" },
-  { code: "A$", name: "Australian Dollar", flag: "🇦🇺" },
-  { code: "C$", name: "Canadian Dollar", flag: "🇨🇦" },
-  { code: "CHF", name: "Swiss Franc", flag: "🇨🇭" },
-  { code: "₽", name: "Russian Ruble", flag: "🇷🇺" },
-  { code: "R$", name: "Brazilian Real", flag: "🇧🇷" },
-  { code: "₺", name: "Turkish Lira", flag: "🇹🇷" },
-  { code: "RM", name: "Malaysian Ringgit", flag: "🇲🇾" },
-  { code: "₱", name: "Philippine Peso", flag: "🇵🇭" },
-  { code: "฿", name: "Thai Baht", flag: "🇹🇭" },
-  { code: "Rp", name: "Indonesian Rupiah", flag: "🇮🇩" },
-  { code: "DH", name: "UAE Dirham", flag: "🇦🇪" },
-  { code: "SR", name: "Saudi Riyal", flag: "🇸🇦" },
-  { code: "EGP", name: "Egyptian Pound", flag: "🇪🇬" },
-  { code: "DZD", name: "Algerian Dinar", flag: "🇩🇿" },
-];
-
-function Card({ title, icon, children }) {
-  return (
-    <div style={{ background: "#1a1a1a", border: "1px solid #222", borderRadius: 16, marginBottom: 12, overflow: "hidden" }}>
-      <div style={{ padding: "16px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #222" }}>
-        <span style={{ fontSize: 18 }}>{icon}</span>
-        <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>{title}</span>
-      </div>
-      {children}
-    </div>
-  );
-}
+const CURRENCIES = ["$", "€", "£", "﷼", "د.إ", "د.ك"];
 
 export default function Settings() {
-  const { state, setCurrency, replaceAll, resetData, currency, showToast } = useApp();
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const fileRef = useRef(null);
+  const { state, setSettings, replaceAll, resetData, showToast } = useApp();
+  const [showCurrency, setShowCurrency] = useState(false);
+  const rtl = isRTL();
 
-  const totalItems = state.consumables.length + state.durables.length + state.car.length + state.finances.length + state.recipes.length;
+  const stats = [
+    { label: t("expenses"), count: state.expenses.length, color: "#3B5BDB" },
+    { label: t("invoices"), count: state.invoices.length, color: "#E03131" },
+    { label: t("properties"), count: state.parents.length, color: "#7950F2" },
+    { label: t("total"), count: state.expenses.length + state.invoices.length + state.parents.length, color: "#fff" },
+  ];
 
-  const handleExport = () => {
-    try { exportData(state); showToast("Backup downloaded!", "success"); }
-    catch (err) { showToast("Export failed", "error"); }
-  };
-
-  const handleImport = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImporting(true);
+  const handleImport = async (file) => {
     try {
       const data = await readImportFile(file);
       replaceAll(data);
-      showToast("Data restored!", "success");
-    } catch (err) {
-      showToast("Import failed: " + err.message, "error");
-    } finally { setImporting(false); if (fileRef.current) fileRef.current.value = ""; }
-  };
-
-  const handleReset = () => {
-    resetData();
-    setShowResetConfirm(false);
-    showToast("Reset complete", "info");
+      showToast("Imported successfully", "success");
+    } catch (e) { showToast("Import failed", "error"); }
   };
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ padding: "16px 16px 8px", flexShrink: 0 }}>
-        <div style={{ fontSize: 13, color: "#666", marginBottom: 2 }}>Preferences</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: "#fff" }}>⚙️ Settings</div>
+    <div className="animate-fade-in">
+      <h1 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 16px" }}>{t("settings")}</h1>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+        {stats.map(item => (
+          <div key={item.label} style={{ background: "#1a1a1a", borderRadius: 14, padding: 14, border: "1px solid #222", textAlign: "center" }}>
+            <div style={{ fontSize: 11, color: "#888" }}>{item.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: item.color, marginTop: 4 }}>{item.count}</div>
+          </div>
+        ))}
       </div>
 
-      <div style={{ flex: 1, overflow: "auto", padding: "8px 16px 80px", WebkitOverflowScrolling: "touch" }}>
-        <Card title="Data Overview" icon="📊">
-          <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {[
-              { label: "Consumables", count: state.consumables.length, color: "#3B5BDB" },
-              { label: "Durables", count: state.durables.length, color: "#2F9E44" },
-              { label: "Car Events", count: state.car.length, color: "#E67700" },
-              { label: "Finances", count: state.finances.length, color: "#7950F2" },
-              { label: "Recipes", count: state.recipes.length, color: "#E03131" },
-              { label: "Total", count: totalItems, color: "#fff" },
-            ].map(item => (
-              <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px", background: "#0F0F0F", borderRadius: 12, border: "1px solid #222" }}>
-                <div style={{ width: 10, height: 10, borderRadius: 99, background: item.color }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: "#888" }}>{item.label}</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "#fff" }}>{item.count}</div>
-                </div>
-              </div>
+      <div style={{ background: "#1a1a1a", borderRadius: 16, border: "1px solid #222", overflow: "hidden", marginBottom: 16 }}>
+        <div onClick={() => setShowCurrency(!showCurrency)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottom: "1px solid #222", cursor: "pointer" }}>
+          <span style={{ fontSize: 14 }}>{t("currency")}</span>
+          <span style={{ fontWeight: 700, color: "#3B5BDB" }}>{state.settings.currency}</span>
+        </div>
+        {showCurrency && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: 12 }}>
+            {CURRENCIES.map(c => (
+              <button key={c} onClick={() => { setSettings({ currency: c }); setShowCurrency(false); }} style={{ padding: "8px 16px", borderRadius: 10, border: state.settings.currency === c ? "1px solid #3B5BDB" : "1px solid #333", background: state.settings.currency === c ? "#3B5BDB" : "#0F0F0F", color: "#fff", fontWeight: 600, cursor: "pointer" }}>{c}</button>
             ))}
           </div>
-        </Card>
+        )}
 
-        <Card title="Currency" icon="💱">
-          <div style={{ padding: "16px" }}>
-            <button onClick={() => setShowCurrencyPicker(!showCurrencyPicker)} style={{
-              width: "100%", padding: "14px", borderRadius: 12, border: "1px solid #333",
-              background: "#0F0F0F", color: "#fff", fontSize: 16, fontWeight: 700,
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between"
-            }}>
-              <span>{CURRENCIES.find(c => c.code === currency)?.flag || "💵"} {currency}</span>
-              <span style={{ color: "#666", fontSize: 12 }}>TAP TO CHANGE ▼</span>
-            </button>
-
-            {showCurrencyPicker && (
-              <div style={{ marginTop: 10, maxHeight: 300, overflow: "auto", borderRadius: 12, border: "1px solid #333", background: "#0F0F0F" }}>
-                {CURRENCIES.map(c => (
-                  <button key={c.code} onClick={() => { setCurrency(c.code); setShowCurrencyPicker(false); showToast(`Currency set to ${c.code}`, "success"); }} style={{
-                    width: "100%", padding: "12px 16px", border: "none", borderBottom: "1px solid #222",
-                    background: currency === c.code ? "#3B5BDB22" : "transparent", color: "#fff",
-                    fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 12,
-                    textAlign: "left"
-                  }}>
-                    <span style={{ fontSize: 20 }}>{c.flag}</span>
-                    <span style={{ flex: 1 }}>{c.name}</span>
-                    <span style={{ fontWeight: 700, color: currency === c.code ? "#3B5BDB" : "#666" }}>{c.code}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottom: "1px solid #222" }}>
+          <span style={{ fontSize: 14 }}>{t("language")}</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => { setLang("en"); setSettings({ language: "en" }); }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: getLang() === "en" ? "#3B5BDB" : "#222", color: "#fff", fontSize: 12, cursor: "pointer" }}>{t("english")}</button>
+            <button onClick={() => { setLang("ar"); setSettings({ language: "ar" }); }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: getLang() === "ar" ? "#3B5BDB" : "#222", color: "#fff", fontSize: 12, cursor: "pointer" }}>{t("arabic")}</button>
           </div>
-        </Card>
-
-        <Card title="Backup & Restore" icon="💾">
-          <div style={{ padding: "16px" }}>
-            <button onClick={handleExport} style={{
-              width: "100%", padding: "14px", borderRadius: 12, border: "1px solid #3B5BDB",
-              background: "#3B5BDB18", color: "#3B5BDB", fontWeight: 800, fontSize: 15,
-              cursor: "pointer", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: 8
-            }}>📤 Export All Data</button>
-            <div style={{ fontSize: 11, color: "#555", textAlign: "center", marginBottom: 16 }}>Downloads a .json file to transfer to another phone</div>
-
-            <input ref={fileRef} type="file" accept=".json,application/json" onChange={handleImport} style={{ display: "none" }} />
-            <button onClick={() => fileRef.current?.click()} disabled={importing} style={{
-              width: "100%", padding: "14px", borderRadius: 12, border: "1px solid #333",
-              background: "#0F0F0F", color: "#aaa", fontWeight: 700, fontSize: 15,
-              cursor: importing ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8
-            }}>{importing ? "⏳ Reading..." : "📥 Import Data"}</button>
-            <div style={{ fontSize: 11, color: "#555", textAlign: "center", marginTop: 10 }}>Select a previously exported .json file</div>
-          </div>
-        </Card>
-
-        <Card title="Danger Zone" icon="🚨">
-          <div style={{ padding: "16px" }}>
-            <button onClick={() => setShowResetConfirm(true)} style={{
-              width: "100%", padding: "14px", borderRadius: 12, border: "1px solid #E03131",
-              background: "#E0313118", color: "#E03131", fontWeight: 800, fontSize: 15, cursor: "pointer"
-            }}>🗑️ Reset All Data</button>
-            <div style={{ fontSize: 11, color: "#555", textAlign: "center", marginTop: 10 }}>Export first! This erases everything forever.</div>
-          </div>
-        </Card>
-
-        <div style={{ textAlign: "center", padding: "30px 0", color: "#444", fontSize: 12 }}>
-          <div style={{ fontWeight: 700, color: "#555", marginBottom: 4 }}>LifeOS v2.0</div>
-          <div>Built with React + Capacitor</div>
-          <div>All data stays on your device</div>
         </div>
+
+        <button onClick={() => exportData(state)} style={{ width: "100%", textAlign: "start", padding: 16, background: "none", border: "none", color: "#fff", fontSize: 14, borderBottom: "1px solid #222", cursor: "pointer" }}>⬆️ {t("export")}</button>
+
+        <label style={{ display: "block", width: "100%", padding: 16, cursor: "pointer", fontSize: 14 }}>
+          ⬇️ {t("import")}
+          <input type="file" accept="application/json" style={{ display: "none" }} onChange={e => e.target.files?.[0] && handleImport(e.target.files[0])} />
+        </label>
       </div>
 
-      <ConfirmModal
-        open={showResetConfirm}
-        title="Reset Everything?"
-        message="This permanently deletes ALL your items, recipes, categories, and settings. Export a backup first if you want to keep anything."
-        confirmText="Yes, Reset All"
-        confirmColor="#E03131"
-        onConfirm={handleReset}
-        onCancel={() => setShowResetConfirm(false)}
-      />
+      <button onClick={() => { if (confirm("Erase everything?")) { resetData(); showToast("Reset", "warning"); } }} style={{ width: "100%", padding: 16, borderRadius: 16, border: "1px solid #E03131", background: "rgba(224,49,49,0.1)", color: "#E03131", fontWeight: 700, cursor: "pointer", marginBottom: 20 }}>
+        {t("reset")}
+      </button>
+
+      <div style={{ textAlign: "center", color: "#444", fontSize: 12, paddingBottom: 40 }}>{t("version")}</div>
     </div>
   );
 }
