@@ -1,9 +1,5 @@
 export function exportData(data) {
-  const payload = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    data
-  };
+  const payload = { version: 2, exportedAt: new Date().toISOString(), data };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
