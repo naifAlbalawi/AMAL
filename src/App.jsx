@@ -11,7 +11,7 @@ import { Toast } from "./components/Toast";
 function AppShell() {
   const [page, setPage] = useState("dashboard");
   const [moreOpen, setMoreOpen] = useState(false);
-  const { toast, state } = useApp();
+  const { toast } = useApp();
   const rtl = isRTL();
 
   useEffect(() => { loadLang(); }, []);
@@ -21,7 +21,7 @@ function AppShell() {
     { id: "expenses", icon: "◈", label: t("expenses") },
     { id: "invoices", icon: "🧾", label: t("invoices") },
     { id: "parents", icon: "⌂", label: t("parents") },
-    { id: "more", icon: "☰", label: t("settings") },
+    { id: "settings", icon: "☰", label: t("settings") },
   ];
 
   const renderPage = () => {
@@ -36,30 +36,65 @@ function AppShell() {
   };
 
   return (
-    <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100vh", background: "#0F0F0F", position: "relative", paddingBottom: 80, direction: rtl ? "rtl" : "ltr" }}>
-      <div style={{ padding: 16 }}>{renderPage()}</div>
+    <div style={{ 
+      maxWidth: 480, 
+      margin: "0 auto", 
+      minHeight: "100vh", 
+      background: "#0F0F0F", 
+      position: "relative", 
+      paddingBottom: 90,
+      direction: rtl ? "rtl" : "ltr",
+      overflowX: "hidden"
+    }}>
+      <div style={{ padding: "16px 16px 0" }}>{renderPage()}</div>
 
-      <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "rgba(15,15,15,0.95)", backdropFilter: "blur(12px)", borderTop: "1px solid #222", display: "flex", justifyContent: "space-around", padding: "8px 0", zIndex: 100, maxWidth: 480, margin: "0 auto", left: "50%", transform: "translateX(-50%)" }}>
+      <nav style={{ 
+        position: "fixed", 
+        bottom: 0, 
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "100%",
+        maxWidth: 480,
+        background: "rgba(15,15,15,0.95)", 
+        backdropFilter: "blur(12px)", 
+        borderTop: "1px solid #222", 
+        display: "flex", 
+        justifyContent: "space-around", 
+        alignItems: "center",
+        padding: "6px 0 12px", 
+        zIndex: 100,
+        boxSizing: "border-box"
+      }}>
         {NAV.map(item => {
-          const active = page === item.id || (item.id === "more" && moreOpen);
+          const active = page === item.id;
           return (
-            <button key={item.id} onClick={() => { if (item.id === "more") { setMoreOpen(!moreOpen); } else { setPage(item.id); setMoreOpen(false); } }}
-              style={{ background: "none", border: "none", color: active ? "#fff" : "#666", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, fontSize: 10, fontWeight: 600, cursor: "pointer", flex: 1 }}>
-              <span style={{ fontSize: 20 }}>{item.icon}</span>
-              <span>{item.label}</span>
+            <button 
+              key={item.id} 
+              onClick={() => { setPage(item.id); setMoreOpen(false); }}
+              style={{ 
+                background: "none", 
+                border: "none", 
+                color: active ? "#fff" : "#666", 
+                display: "flex", 
+                flexDirection: "column", 
+                alignItems: "center", 
+                justifyContent: "center",
+                gap: 3, 
+                fontSize: 11, 
+                fontWeight: active ? 700 : 500,
+                cursor: "pointer", 
+                flex: 1,
+                padding: "4px 0",
+                minHeight: 50,
+                lineHeight: 1.2
+              }}
+            >
+              <span style={{ fontSize: 20, lineHeight: 1 }}>{item.icon}</span>
+              <span style={{ whiteSpace: "nowrap", fontSize: 10 }}>{item.label}</span>
             </button>
           );
         })}
       </nav>
-
-      {moreOpen && (
-        <>
-          <div onClick={() => setMoreOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 140, background: "transparent" }} />
-          <div style={{ position: "fixed", bottom: 70, right: rtl ? "auto" : 16, left: rtl ? 16 : "auto", zIndex: 150, background: "#1a1a1a", border: "1px solid #333", borderRadius: 16, padding: 8, minWidth: 180, boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
-            <button onClick={() => { setPage("settings"); setMoreOpen(false); }} style={{ width: "100%", textAlign: "start", padding: "12px 16px", background: "none", border: "none", color: "#fff", fontSize: 14, borderRadius: 10 }}>{t("settings")}</button>
-          </div>
-        </>
-      )}
 
       {toast && <Toast message={toast.message} type={toast.type} />}
     </div>
