@@ -1,6 +1,6 @@
 {
-  "appId": "com.lifeos.app",
-  "appName": "LifeOS",
+  "appId": "com.amal.app",
+  "appName": "AMAL",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
@@ -8,12 +8,6 @@
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 2000,
-      "launchAutoHide": true,
-      "backgroundColor": "#0F0F0F",
-      "androidScaleType": "CENTER_CROP"
-    },
-    "StatusBar": {
-      "style": "DARK",
       "backgroundColor": "#0F0F0F"
     }
   }
