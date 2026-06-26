@@ -2,7 +2,7 @@ export function ConfirmModal({ open, title, message, onConfirm, onCancel, confir
   if (!open) return null;
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, backdropFilter: "blur(8px)" }}>
-      <div style={{ background: "#1a1a1a", borderRadius: 20, padding: 24, width: "100%", maxWidth: 340, border: "1px solid #2a2a2a", animation: "fadeInUp 0.2s ease" }}>
+      <div style={{ background: "#1a1a1a", borderRadius: 20, padding: 24, width: "100%", maxWidth: 340, border: "1px solid #2a2a2a", animation: "fadeIn 0.25s ease-out" }}>
         <div style={{ fontSize: 17, fontWeight: 700, color: "#fff", marginBottom: 8 }}>{title}</div>
         <div style={{ fontSize: 14, color: "#888", marginBottom: 24, lineHeight: 1.5 }}>{message}</div>
         <div style={{ display: "flex", gap: 10 }}>
