@@ -1,4 +1,4 @@
-w/** @type {import('@capacitor/cli').CapacitorConfig} */
+/** @type {import('@capacitor/cli').CapacitorConfig} */
 const config = {
   appId: 'com.lifeos.app',
   appName: 'LifeOS',
