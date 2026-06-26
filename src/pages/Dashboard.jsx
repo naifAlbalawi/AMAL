@@ -4,15 +4,18 @@ import { GanttStrip } from "../components/GanttStrip";
 import { t, isRTL } from "../utils/i18n";
 
 function fmt(n, currency) { return `${currency}${n.toFixed(2)}`; }
-function daysTo(a, b) { return Math.round((new Date(a) - new Date(b)) / 86400000); }
+function daysTo(a, b) { 
+  if (!a || !b) return null;
+  return Math.round((new Date(a) - new Date(b)) / 86400000); 
+}
 
 export default function Dashboard() {
   const { state, monthly, currency, TODAY } = useApp();
   const [showAll, setShowAll] = useState(false);
   const rtl = isRTL();
 
-  const urgent = state.expenses.filter(r => r.endDate && daysTo(r.endDate, TODAY) <= 7 && daysTo(r.endDate, TODAY) >= 0);
-  const upcoming = state.expenses.filter(r => r.endDate && daysTo(r.endDate, TODAY) > 0 && daysTo(r.endDate, TODAY) <= 30);
+  const urgent = state.expenses.filter(r => r.endDate && daysTo(r.endDate, TODAY) !== null && daysTo(r.endDate, TODAY) <= 7 && daysTo(r.endDate, TODAY) >= 0);
+  const upcoming = state.expenses.filter(r => r.endDate && daysTo(r.endDate, TODAY) !== null && daysTo(r.endDate, TODAY) > 0 && daysTo(r.endDate, TODAY) <= 30);
   const displayUpcoming = showAll ? upcoming : upcoming.slice(0, 4);
 
   const tagSpend = {};
